@@ -21,6 +21,7 @@ const verifyToken = (req, res, next) => {
   try {
     const validToken = verify(accessToken, "GONNACHANGE");
     if (validToken) {
+      req.userId = validToken.id;
       return next();
     }
   } catch (e) {

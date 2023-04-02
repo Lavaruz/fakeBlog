@@ -5,14 +5,13 @@ const { createToken } = require("../middlewares/JWT");
 async function registerUser(req, res) {
   const { username, password } = req.body;
   const hashPassword = await bcrypt.hash(password, 10);
-  //   const newUser = await User.create({
-  //     username: username,
-  //     password: hashPassword,
-  //   });
-  res.send({
-    status: "register",
-    username,
+  const newUser = await User.create({
+    username: username,
     password: hashPassword,
+  });
+  res.send({
+    status: "register success",
+    user: newUser,
   });
 }
 
@@ -39,6 +38,7 @@ async function loginUser(req, res) {
       const accessToken = createToken(user);
       res.cookie("access-token", accessToken, {
         maxAge: 60 * 60 * 1000,
+        httpOnly: true,
       });
       res.json({
         status: "login",

@@ -76,12 +76,35 @@ async function getUserByUsername(req, res) {
   res.send(user);
 }
 
-async function updateUserByPk(req, res) {
-  const { pk } = req.params;
+async function getUser(req, res) {
+  const user = await User.findByPk(req.userId, {
+    include: [
+      {
+        model: User,
+        as: "follower",
+        attributes: ["id", "username"],
+        through: {
+          attributes: [],
+        },
+      },
+      {
+        model: User,
+        as: "following",
+        attributes: ["id", "username"],
+        through: {
+          attributes: [],
+        },
+      },
+      {
+        model: Post,
+        attributes: ["id", "title"],
+      },
+    ],
+  });
+  res.send(user);
+}
 
-  //   const date = new Date(Date.UTC(2001, 10 - 1, 18));
-  //   console.log(date);
-
+async function updateUser(req, res) {
   const user = await User.findByPk(pk, {
     attributes: ["id", "username"],
   });
@@ -99,7 +122,7 @@ async function updateUserByPk(req, res) {
     },
     {
       where: {
-        id: pk,
+        id: req.userId,
       },
     }
   );
@@ -109,10 +132,9 @@ async function updateUserByPk(req, res) {
   });
 }
 
-async function addFollowingByPk(req, res) {
-  const { pk } = req.params;
+async function addFollowing(req, res) {
   const { idUser } = req.body;
-  const userMain = await User.findByPk(pk);
+  const userMain = await User.findByPk(req.userId);
   const userAim = await User.findOne({
     where: {
       id: idUser,
@@ -125,7 +147,8 @@ async function addFollowingByPk(req, res) {
 
 module.exports = {
   getAllUser,
-  updateUserByPk,
-  addFollowingByPk,
+  updateUser,
+  addFollowing,
   getUserByUsername,
+  getUser,
 };

@@ -1,5 +1,4 @@
 const { User, Post, Tag } = require("../models");
-const { post } = require("../routes/userRoute");
 
 User.hasMany(Post);
 Post.belongsTo(User);
@@ -8,14 +7,15 @@ Post.belongsToMany(Tag, { through: "PostTag" });
 Tag.belongsToMany(Post, { through: "PostTag" });
 
 async function addPost(req, res) {
-  const { title, body, tag, username } = req.body;
+  const { title, body, tag } = req.body;
+
   const newPost = await Post.create({
     title: title,
     body: body,
   });
   const user = await User.findOne({
     where: {
-      username: username,
+      id: req.userId,
     },
   });
   const newTag = await Tag.create({
@@ -68,7 +68,6 @@ async function getPostByPk(req, res) {
 async function updatePostByPk(req, res) {
   const { pk } = req.params;
   const { title, body } = req.body;
-  const post = await Post.findByPk(pk);
   const newPost = await Post.update(
     {
       title,
@@ -77,13 +76,23 @@ async function updatePostByPk(req, res) {
     {
       where: {
         id: pk,
+        UserId: req.userId,
       },
     }
   );
   res.json({
     status: newPost[0] ? "new update" : "no change in this post",
-    post: post,
   });
+}
+
+async function getPostByProfile(req, res) {
+  const user = await User.findByPk(req.userId, {
+    attributes: [],
+    include: {
+      model: Post,
+    },
+  });
+  res.send(user);
 }
 
 module.exports = {
@@ -91,4 +100,5 @@ module.exports = {
   getAllPost,
   getPostByPk,
   updatePostByPk,
+  getPostByProfile,
 };
