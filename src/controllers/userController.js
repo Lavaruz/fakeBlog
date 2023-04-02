@@ -1,4 +1,5 @@
 const { User, Post, FollowerFollowing } = require("../models");
+const bcrypt = require("bcrypt");
 
 User.hasMany(Post);
 Post.belongsTo(User);
@@ -13,23 +14,6 @@ User.belongsToMany(User, {
   foreignKey: "followingId",
   through: FollowerFollowing,
 });
-
-async function addUser(req, res) {
-  const data = req.body;
-  const newUser = await User.create({
-    username: data.username,
-    password: data.password,
-    nickname: data.nickname || null,
-    phone: data.phone || null,
-    email: data.email || null,
-    birth: date || null,
-    img: data.img || null,
-    website: data.website || null,
-    bio: data.bio || null,
-    gender: data.gender || null,
-  });
-  res.send(newUser);
-}
 
 async function getAllUser(req, res) {
   const user = await User.findAll({
@@ -63,26 +47,43 @@ async function getAllUser(req, res) {
 async function getUserByUsername(req, res) {
   const { username } = req.params;
   const user = await User.findOne({
-    attributes: { exclude: ["password"] },
     where: {
       username: username,
     },
-    include: [{ all: true }],
+    include: [
+      {
+        model: User,
+        as: "follower",
+        attributes: ["id", "username"],
+        through: {
+          attributes: [],
+        },
+      },
+      {
+        model: User,
+        as: "following",
+        attributes: ["id", "username"],
+        through: {
+          attributes: [],
+        },
+      },
+      {
+        model: Post,
+        attributes: ["id", "title"],
+      },
+    ],
   });
   res.send(user);
 }
 
-async function updateUserByUsername(req, res) {
-  const { username } = req.params;
+async function updateUserByPk(req, res) {
+  const { pk } = req.params;
 
   //   const date = new Date(Date.UTC(2001, 10 - 1, 18));
   //   console.log(date);
 
-  const user = await User.findOne({
-    attributes: { exclude: ["password"] },
-    where: {
-      username: username,
-    },
+  const user = await User.findByPk(pk, {
+    attributes: ["id", "username"],
   });
   const data = req.body;
   const updateUser = await User.update(
@@ -98,25 +99,23 @@ async function updateUserByUsername(req, res) {
     },
     {
       where: {
-        username: username,
+        id: pk,
       },
     }
   );
   res.json({
-    updateStatus: updateUser[0],
+    updateStatus: updateUser[0] ? "new update" : "no change in this user",
     user: user,
   });
 }
 
-async function addFollowing(req, res) {
-  const userMain = await User.findOne({
-    where: {
-      username: req.params.username,
-    },
-  });
+async function addFollowingByPk(req, res) {
+  const { pk } = req.params;
+  const { idUser } = req.body;
+  const userMain = await User.findByPk(pk);
   const userAim = await User.findOne({
     where: {
-      username: req.body.username,
+      id: idUser,
     },
   });
 
@@ -126,8 +125,7 @@ async function addFollowing(req, res) {
 
 module.exports = {
   getAllUser,
-  addUser,
-  updateUserByUsername,
+  updateUserByPk,
+  addFollowingByPk,
   getUserByUsername,
-  addFollowing,
 };
